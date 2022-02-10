@@ -9,8 +9,8 @@
 using namespace std;
 
 class Tabela{
-    vector<LinhaTabela> tabela;
 public:
+    vector<LinhaTabela> tabela;
     Tabela(string);
     void printTabela();
 };
