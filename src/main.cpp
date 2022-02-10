@@ -7,9 +7,10 @@
 #define MAX_SIZE_PATH 100
 
 vector<vector<string>> historico;
+vector<string> path;
 Tabela tabela = Tabela(".unbshrc");
 
-vector <string> split(string linha);
+vector <string> split(string linha, char caractere);
 void printVetor(vector<char *> tokens);
 void printVetor(vector<string> tokens);
 int executa(vector<string> linhaComando, string inArquivo, string outArquivo);
@@ -17,6 +18,13 @@ void trataBuiltin(vector<string> linhaComando, string inArquivo, string outArqui
 void parse(vector<string> tokens);
 
 int main(int argc, char *argv[]){
+    ifstream fin;
+    string tmp;
+    fin.open(".unbshrc_profile");
+    fin >> tmp;
+    path = split(tmp, ';');
+    path[0].erase(path[0].begin(), path[0].begin() + 5);
+    printVetor(path);
     tabela.printTabela();
     string entrada;
     if (argc == 1){
@@ -25,28 +33,27 @@ int main(int argc, char *argv[]){
             getcwd(cwd,sizeof(cwd));
             cout << "UnBsh-user1-" << cwd<< ">";
             getline(cin, entrada);
-            vector<string> tokens = split(entrada);
+            vector<string> tokens = split(entrada, ' ');
             parse(tokens);
         }
     }
     else{
-        ifstream fin;
         fin.open(argv[1]);
         while (getline(fin, entrada)){
             if (entrada[0] == '#'){
                 continue;
             }
-            vector<string> tokens = split(entrada);
+            vector<string> tokens = split(entrada, ' ');
             parse(tokens);
         }
     }
 }
 
-vector <string> split(string linha){
+vector <string> split(string linha, char caractere){
     vector<string> tokens;
     string buffer;
     for (char letra : linha){
-        if (letra == ' ' && buffer != ""){
+        if (letra == caractere && buffer != ""){
             tokens.push_back(buffer);
             buffer = "";
         }
@@ -71,16 +78,20 @@ void printVetor(vector<string> tokens){
     }
     cout << endl;
 }
+vector<char *> converteVetor(vector<string> entrada){
+    vector <char *> args;
+    for (int i = 0; i < entrada.size(); i++){
+        args.push_back(&entrada[i][0]);
+    }
+    args.push_back(nullptr);
+    return args;
+}
 
 int executa(vector<string> linhaComando, string inArquivo, string outArquivo, bool appArquivo){
     int pid = fork();
     int retorno;
-    vector<char *> args;
+    
     if (!pid){
-        for (int i = 0; i < linhaComando.size(); i++){
-            args.push_back(&linhaComando[i][0]);
-        }
-        args.push_back(nullptr);
         if (inArquivo != ""){
             cout << "Entrei aqui" << endl;
             int fin = open(inArquivo.c_str(), O_RDONLY);
@@ -91,7 +102,12 @@ int executa(vector<string> linhaComando, string inArquivo, string outArquivo, bo
             int fout = open(outArquivo.c_str(), O_CREAT | mask |  O_WRONLY, S_IRWXU | S_IRWXG);
             dup2(fout, 1);
         }
-        execvp(args[0], args.data());
+        for (string caminho : path){
+            vector<string> copia = linhaComando;
+            copia[0] = caminho + copia[0];
+            vector<char *> args = converteVetor(copia);
+            execv(args[0], args.data());
+        }
     }
     else{
         wait(NULL);
