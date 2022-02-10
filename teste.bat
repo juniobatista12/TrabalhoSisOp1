@@ -2,7 +2,7 @@
 processos -elf > texto.txt
 conta -l < texto.txt
 acha / | filtra ime > /dev/null &
-dorme 100&
+dorme 100 &
 pwd
 criadir meu_dir
 muda meu_dir
