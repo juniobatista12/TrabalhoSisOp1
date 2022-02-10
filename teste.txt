@@ -1,7 +1,0 @@
-include
-Makefile
-src
-testando
-teste
-teste.bat
-teste.txt
