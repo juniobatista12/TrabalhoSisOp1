@@ -52,7 +52,7 @@ int executa(vector<string> linhaComando){
     }
 }
 
-void parse(vector<string> linhaComando){
+void parse(vector<string> linhaComando, string inArquivo, string outArquivo){
     if (linhaComando[0] == "cd"){
         chdir(linhaComando[1].c_str());
     }
@@ -63,12 +63,16 @@ void parse(vector<string> linhaComando){
     }
     else if(linhaComando[0] == "historico"){
         if (linhaComando.size() != 1){
-            parse(historico[stoi(linhaComando[1])]);
+            parse(historico[stoi(linhaComando[1])], "", "");
         }
         else {
-            for (vector<string> comando : historico){
-                printVetor(comando);
+            try{
+                for (int i = 0; i < historico.size(); i++){
+                    cout << i << " ";
+                    printVetor(historico[i]);
+                }
             }
+            catch(exception e){}
         }
     }
     else
@@ -93,11 +97,28 @@ int main(){
                 }
             }
             historico.push_back(tokens);
+            if (historico.size() > 10){
+                historico.erase(historico.begin());
+            }
             for (int i = 0; tokens.size() && tokens[i] != "|" && tokens[i] != "<" && tokens[i] != ">";){
                 linhaComando.push_back(tokens[i]);
                 tokens.erase(tokens.begin());
             }
-            parse(linhaComando);
+            string inArquivo = "", outArquivo = "";
+            if (tokens[0] == "<"){
+                tokens.erase(tokens.begin());
+                inArquivo = tokens[0];
+                tokens.erase(tokens.begin());
+            }
+            if (tokens[0] == ">"){
+                tokens.erase(tokens.begin());
+                outArquivo = tokens[0];
+                tokens.erase(tokens.begin());
+            }
+            if (tokens[0] == "|" ){
+
+            }
+            parse(linhaComando, inArquivo, outArquivo);
         }
     }
 }
