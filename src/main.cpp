@@ -1,6 +1,7 @@
 #include "../include/Tabela.h"
 #include <fcntl.h>
 #include <fstream>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -22,6 +23,7 @@ int main(int argc, char *argv[]){
     string tmp;
     fin.open(".unbshrc_profile");
     fin >> tmp;
+    fin.close();
     path = split(tmp, ';');
     path[0].erase(path[0].begin(), path[0].begin() + 5);
     printVetor(path);
@@ -90,11 +92,12 @@ vector<char *> converteVetor(vector<string> entrada){
 int executa(vector<string> linhaComando, string inArquivo, string outArquivo, bool appArquivo){
     int pid = fork();
     int retorno;
-    printVetor(linhaComando);
-    cout << inArquivo << " " << outArquivo <<endl;
+    bool background = linhaComando[linhaComando.size() - 1] == "&";
+    if (background){
+        linhaComando.pop_back();
+    }
     if (!pid){
         if (inArquivo != ""){
-            cout << "Entrei aqui" << endl;
             int fin = open(inArquivo.c_str(), O_RDONLY);
             dup2(fin, 0);
         }
@@ -103,7 +106,7 @@ int executa(vector<string> linhaComando, string inArquivo, string outArquivo, bo
             int fout = open(outArquivo.c_str(), O_CREAT | mask |  O_WRONLY, S_IRWXU | S_IRWXG);
             dup2(fout, 1);
         }
-        for (string caminho : path){
+        for (string caminho : path){            
             vector<string> copia = linhaComando;
             copia[0] = caminho + copia[0];
             vector<char *> args = converteVetor(copia);
@@ -112,7 +115,14 @@ int executa(vector<string> linhaComando, string inArquivo, string outArquivo, bo
         cout << "Comando nao encontrado" << endl;
     }
     else{
-        wait(NULL);
+        if (background){
+            int status;
+            cout << "Processo em background " << pid << " foi iniciado" << endl;
+            waitpid(-1, &status, WNOHANG);
+        }
+        else {
+            wait(NULL);
+        }
     }
 }
 
