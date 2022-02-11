@@ -90,7 +90,8 @@ vector<char *> converteVetor(vector<string> entrada){
 int executa(vector<string> linhaComando, string inArquivo, string outArquivo, bool appArquivo){
     int pid = fork();
     int retorno;
-    
+    printVetor(linhaComando);
+    cout << inArquivo << " " << outArquivo <<endl;
     if (!pid){
         if (inArquivo != ""){
             cout << "Entrei aqui" << endl;
@@ -108,6 +109,7 @@ int executa(vector<string> linhaComando, string inArquivo, string outArquivo, bo
             vector<char *> args = converteVetor(copia);
             execv(args[0], args.data());
         }
+        cout << "Comando nao encontrado" << endl;
     }
     else{
         wait(NULL);
@@ -134,13 +136,17 @@ void trataBuiltin(vector<string> linhaComando, string inArquivo, string outArqui
             }
         }
     }
+    else if (linhaComando[0] == "ver"){
+        cout << "v1.0" << endl << "Ultima atualizacao: 10/02/2022" << endl << "Autor: Divino Junio Batista Lopes" << endl;
+    }
     else
         executa(linhaComando, inArquivo, outArquivo, appArquivo);
 }
 
 void parse(vector<string> tokens){
-    vector<string> linhaComando;
+    bool piped = false;
     while (tokens.size()){
+        vector<string> linhaComando;
         for (LinhaTabela linha : tabela.tabela){
             if(tokens[0] == linha.alias){
                 tokens[0] = linha.cmd;
@@ -156,6 +162,10 @@ void parse(vector<string> tokens){
         }
         string inArquivo = "", outArquivo = "";
         bool appArquivo = false;
+        if (piped){
+            inArquivo = ".tmp";
+            piped = false;
+        }
         if (tokens[0] == "<"){
             tokens.erase(tokens.begin());
             inArquivo = tokens[0];
@@ -172,8 +182,10 @@ void parse(vector<string> tokens){
             appArquivo = true;
             tokens.erase(tokens.begin());
         }
-        else if (tokens[0] == "|" ){
-
+        else if (tokens[0] == "|"){
+            tokens.erase(tokens.begin());
+            outArquivo = ".tmp";
+            piped = true;
         }
         trataBuiltin(linhaComando, inArquivo, outArquivo, appArquivo);
     }
