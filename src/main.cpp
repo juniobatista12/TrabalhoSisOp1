@@ -149,12 +149,14 @@ void trataBuiltin(vector<string> linhaComando, string inArquivo, string outArqui
     else if (linhaComando[0] == "ver"){
         cout << "v1.0" << endl << "Ultima atualizacao: 10/02/2022" << endl << "Autor: Divino Junio Batista Lopes" << endl;
     }
+    else if (linhaComando[0] == "exit" || linhaComando[0] == "sair"){}
     else
         executa(linhaComando, inArquivo, outArquivo, appArquivo);
 }
 
 void parse(vector<string> tokens){
     bool piped = false;
+    int i = 0;
     while (tokens.size()){
         vector<string> linhaComando;
         for (LinhaTabela linha : tabela.tabela){
@@ -173,7 +175,8 @@ void parse(vector<string> tokens){
         string inArquivo = "", outArquivo = "";
         bool appArquivo = false;
         if (piped){
-            inArquivo = ".tmp";
+            inArquivo = ".tmp" + to_string(i);
+            i ^= 1;
             piped = false;
         }
         if (tokens[0] == "<"){
@@ -194,7 +197,7 @@ void parse(vector<string> tokens){
         }
         else if (tokens[0] == "|"){
             tokens.erase(tokens.begin());
-            outArquivo = ".tmp";
+            outArquivo = ".tmp" + to_string(i);
             piped = true;
         }
         trataBuiltin(linhaComando, inArquivo, outArquivo, appArquivo);
