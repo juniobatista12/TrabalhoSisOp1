@@ -11,6 +11,7 @@ vector<vector<string>> historico;
 vector<string> path;
 Tabela tabela = Tabela(".unbshrc");
 
+string adicionaBarra(char *cwd);
 vector <string> split(string linha, char caractere);
 void printVetor(vector<char *> tokens);
 void printVetor(vector<string> tokens);
@@ -29,14 +30,16 @@ int main(int argc, char *argv[]){
     printVetor(path);
     tabela.printTabela();
     string entrada;
+    char cwd[100];
     if (argc == 1){
         while (entrada != "exit" && entrada != "saida"){
-            char cwd[100];
             getcwd(cwd,sizeof(cwd));
             cout << "UnBsh-user1-" << cwd<< ">";
             getline(cin, entrada);
             vector<string> tokens = split(entrada, ' ');
+            path.push_back(adicionaBarra(cwd));
             parse(tokens);
+            path.pop_back();
         }
     }
     else{
@@ -46,9 +49,22 @@ int main(int argc, char *argv[]){
                 continue;
             }
             vector<string> tokens = split(entrada, ' ');
+            getcwd(cwd, sizeof(cwd));
+            path.push_back(adicionaBarra(cwd));
             parse(tokens);
+            path.pop_back();
         }
     }
+}
+
+string adicionaBarra(char *cwd){
+    int i = 0;
+    string tmp;
+    while (cwd[i]){
+        tmp += cwd[i++];
+    }
+    tmp += "/";
+    return tmp;
 }
 
 vector <string> split(string linha, char caractere){
@@ -82,10 +98,7 @@ void printVetor(vector<string> tokens){
 }
 vector<char *> converteVetor(vector<string> entrada){
     vector <char *> args;
-    for (int i = 0; i < entrada.size(); i++){
-        args.push_back(&entrada[i][0]);
-    }
-    args.push_back(nullptr);
+    
     return args;
 }
 
@@ -106,10 +119,15 @@ int executa(vector<string> linhaComando, string inArquivo, string outArquivo, bo
             int fout = open(outArquivo.c_str(), O_CREAT | mask |  O_WRONLY, S_IRWXU | S_IRWXG);
             dup2(fout, 1);
         }
-        for (string caminho : path){            
+        for (string caminho : path){          
             vector<string> copia = linhaComando;
             copia[0] = caminho + copia[0];
             vector<char *> args = converteVetor(copia);
+            for (int i = 0; i < copia.size(); i++){
+                cout << copia[i] << "\t";
+                args.push_back(&*copia[i].begin());
+            }
+            args.push_back(nullptr);
             execv(args[0], args.data());
         }
         cout << "Comando nao encontrado" << endl;
@@ -117,7 +135,7 @@ int executa(vector<string> linhaComando, string inArquivo, string outArquivo, bo
     else{
         if (background){
             int status;
-            cout << "Processo em background " << pid << " foi iniciado" << endl;
+            cout << "Processo em background [" << pid << "] foi iniciado" << endl;
             waitpid(-1, &status, WNOHANG);
         }
         else {
@@ -157,16 +175,16 @@ void trataBuiltin(vector<string> linhaComando, string inArquivo, string outArqui
 void parse(vector<string> tokens){
     bool piped = false;
     int i = 0;
+    historico.push_back(tokens);
+    if (historico.size() > 10){
+        historico.erase(historico.begin());
+    }
     while (tokens.size()){
         vector<string> linhaComando;
         for (LinhaTabela linha : tabela.tabela){
             if(tokens[0] == linha.alias){
                 tokens[0] = linha.cmd;
             }
-        }
-        historico.push_back(tokens);
-        if (historico.size() > 10){
-            historico.erase(historico.begin());
         }
         for (int i = 0; tokens.size() && tokens[i] != "|" && tokens[i] != "<" && tokens[i] != ">" && tokens[i] != ">>";){
             linhaComando.push_back(tokens[i]);
