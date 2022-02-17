@@ -220,6 +220,8 @@ void parse(vector<string> tokens){
         }
         trataBuiltin(linhaComando, inArquivo, outArquivo, appArquivo);
     }
+    remove(".tmp0");
+    remove(".tmp1");
 }
 // char *args[] = {"ls" "-hla", NULL}
 // execv(args[0], args)
