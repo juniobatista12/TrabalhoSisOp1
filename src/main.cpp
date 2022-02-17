@@ -117,6 +117,8 @@ int executa(vector<string> linhaComando, string inArquivo, string outArquivo, bo
         }
         if (outArquivo != ""){
             int mask = appArquivo ? O_APPEND : 0;
+            if (!mask)
+                remove(outArquivo.c_str());
             int fout = open(outArquivo.c_str(), O_CREAT | mask |  O_WRONLY, S_IRWXU | S_IRWXG);
             dup2(fout, 1);
         }
@@ -125,7 +127,6 @@ int executa(vector<string> linhaComando, string inArquivo, string outArquivo, bo
             copia[0] = caminho + copia[0];
             vector<char *> args = converteVetor(copia);
             for (int i = 0; i < copia.size(); i++){
-                cout << copia[i] << "\t";
                 args.push_back(&*copia[i].begin());
             }
             args.push_back(nullptr);

@@ -1,7 +1,7 @@
 #! /usr/bin/unbsh
 processos -elf > texto.txt
 conta -l < texto.txt
-acha / | filtra ime > /dev/null &
+acha / | filtra ime > teste.txt
 dorme 100 &
 pwd
 criadir meu_dir
