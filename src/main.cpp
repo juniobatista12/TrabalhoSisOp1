@@ -34,7 +34,8 @@ int main(int argc, char *argv[]){
     if (argc == 1){
         while (entrada != "exit" && entrada != "saida"){
             getcwd(cwd,sizeof(cwd));
-            cout << "UnBsh-user1-" << cwd<< ">";
+            string login = getlogin();
+            cout << "UnBsh-" << login << "-" << cwd<< ">";
             getline(cin, entrada);
             vector<string> tokens = split(entrada, ' ');
             path.push_back(adicionaBarra(cwd));
@@ -137,6 +138,9 @@ int executa(vector<string> linhaComando, string inArquivo, string outArquivo, bo
             int status;
             cout << "Processo em background [" << pid << "] foi iniciado" << endl;
             waitpid(-1, &status, WNOHANG);
+            if(WIFEXITED(status)){
+                cout << "Processo em background [" << pid << "] executado" << endl;
+            }
         }
         else {
             wait(NULL);
