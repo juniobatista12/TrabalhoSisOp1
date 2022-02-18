@@ -167,7 +167,7 @@ void trataBuiltin(vector<string> linhaComando, string inArquivo, string outArqui
         }
     }
     else if (linhaComando[0] == "ver"){
-        cout << "v1.0" << endl << "Ultima atualizacao: 18/02/2022" << endl << "Autor: Divino Junio Batista Lopes" << endl;
+        cout << "v2.0" << endl << "Ultima atualizacao: 18/02/2022" << endl << "Autor: Divino Junio Batista Lopes" << endl;
     }
     else if (linhaComando[0] == "exit" || linhaComando[0] == "sair"){}
     else
