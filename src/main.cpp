@@ -18,6 +18,7 @@ void printVetor(vector<string> tokens);
 int executa(vector<string> linhaComando, string inArquivo, string outArquivo);
 void trataBuiltin(vector<string> linhaComando, string inArquivo, string outArquivo);
 void parse(vector<string> tokens);
+bool verificaFilhos();
 
 int main(int argc, char *argv[]){
     ifstream fin;
@@ -32,7 +33,7 @@ int main(int argc, char *argv[]){
     string entrada;
     char cwd[100];
     if (argc == 1){
-        while (entrada != "exit" && entrada != "saida"){
+        while (entrada != "exit" && entrada != "sair"){
             getcwd(cwd,sizeof(cwd));
             string login = getlogin();
             cout << "UnBsh-" << login << "-" << cwd<< ">";
@@ -105,7 +106,6 @@ vector<char *> converteVetor(vector<string> entrada){
 
 int executa(vector<string> linhaComando, string inArquivo, string outArquivo, bool appArquivo){
     int pid = fork();
-    int retorno;
     bool background = linhaComando[linhaComando.size() - 1] == "&";
     if (background){
         linhaComando.pop_back();
@@ -139,9 +139,6 @@ int executa(vector<string> linhaComando, string inArquivo, string outArquivo, bo
             int status;
             cout << "Processo em background [" << pid << "] foi iniciado" << endl;
             waitpid(-1, &status, WNOHANG);
-            if(WIFEXITED(status)){
-                cout << "Processo em background [" << pid << "] executado" << endl;
-            }
         }
         else {
             wait(NULL);
@@ -170,16 +167,73 @@ void trataBuiltin(vector<string> linhaComando, string inArquivo, string outArqui
         }
     }
     else if (linhaComando[0] == "ver"){
-        cout << "v1.0" << endl << "Ultima atualizacao: 10/02/2022" << endl << "Autor: Divino Junio Batista Lopes" << endl;
+        cout << "v1.0" << endl << "Ultima atualizacao: 18/02/2022" << endl << "Autor: Divino Junio Batista Lopes" << endl;
     }
     else if (linhaComando[0] == "exit" || linhaComando[0] == "sair"){}
     else
         executa(linhaComando, inArquivo, outArquivo, appArquivo);
 }
 
+void executaFD(vector<string> command, int fdIn, int fdOut, string outArquivo, bool appArquivo){
+    int pid = fork();
+    if(!pid){
+        dup2(fdIn, 0);
+        if(outArquivo == ""){
+            dup2(fdOut, 1);
+        }
+        else{
+            int mask = appArquivo ? O_APPEND : 0;
+            if (!mask)
+                remove(outArquivo.c_str());
+            int fout = open(outArquivo.c_str(), O_CREAT | mask |  O_WRONLY, S_IRWXU | S_IRWXG);
+            dup2(fout, 1);
+        }
+        for (string caminho : path){        
+            vector<string> copia = command;
+            copia[0] = caminho + copia[0];
+            vector<char *> args = converteVetor(copia);
+            for (int i = 0; i < copia.size(); i++){
+                args.push_back(&*copia[i].begin());
+            }
+            args.push_back(nullptr);
+            execv(args[0], args.data());
+        }
+        cout << "Comando não encontrado" << endl;
+    }
+    else{
+        int status;
+        waitpid(-1, &status, WCONTINUED);
+    }
+}
+
+void executaPipe(vector<vector<string>> commands, string outArquivo, bool appArquivo){
+    int fd1[2], fd0[2];
+    pipe(fd1);
+    for (int i = 0; i < commands.size(); i++){
+        if (i == commands.size() - 1){
+            executaFD(commands[i], fd0[0], 1, outArquivo, appArquivo);
+        }
+        else if (i){
+            executaFD(commands[i], fd0[0], fd1[1], "", appArquivo);
+            close(fd1[1]);
+        }
+        else{
+            executaFD(commands[i], 0, fd1[1], "", appArquivo);
+            close(fd1[1]);
+        }
+        pipe(fd0);
+        dup2(fd1[0], fd0[0]);
+        dup2(fd1[1], fd0[1]);
+        pipe(fd1);
+    }
+}
+
 void parse(vector<string> tokens){
     bool piped = false;
     int i = 0;
+    string inArquivo = "", outArquivo = "";
+    bool appArquivo = false;
+    vector<vector<string>> pipedCommands;
     historico.push_back(tokens);
     if (historico.size() > 10){
         historico.erase(historico.begin());
@@ -194,13 +248,6 @@ void parse(vector<string> tokens){
         for (int i = 0; tokens.size() && tokens[i] != "|" && tokens[i] != "<" && tokens[i] != ">" && tokens[i] != ">>";){
             linhaComando.push_back(tokens[i]);
             tokens.erase(tokens.begin());
-        }
-        string inArquivo = "", outArquivo = "";
-        bool appArquivo = false;
-        if (piped){
-            inArquivo = ".tmp" + to_string(i);
-            i ^= 1;
-            piped = false;
         }
         if (tokens[0] == "<"){
             tokens.erase(tokens.begin());
@@ -220,13 +267,15 @@ void parse(vector<string> tokens){
         }
         else if (tokens[0] == "|"){
             tokens.erase(tokens.begin());
-            outArquivo = ".tmp" + to_string(i);
             piped = true;
         }
-        trataBuiltin(linhaComando, inArquivo, outArquivo, appArquivo);
+        if (!piped)
+            trataBuiltin(linhaComando, inArquivo, outArquivo, appArquivo);
+        else
+            pipedCommands.push_back(linhaComando);
     }
-    remove(".tmp0");
-    remove(".tmp1");
+    if(piped)
+        executaPipe(pipedCommands, outArquivo, appArquivo);
 }
 // char *args[] = {"ls" "-hla", NULL}
 // execv(args[0], args)
